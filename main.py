@@ -83,8 +83,15 @@ def main():
                     print(f"  [SKIPPED] Sequential fallback evaluation also failed. Will retry on next run.")
                     continue
             
-            # Add to processed_ids immediately so we never evaluate it again
-            processed_ids.add(opp["id"])
+            # Determine if we are running in local-only mode (credentials not configured)
+            token = os.getenv("TELEGRAM_BOT_TOKEN")
+            channel_id = os.getenv("TELEGRAM_CHANNEL_ID")
+            is_local_only = (
+                not token 
+                or not channel_id 
+                or token == "your_telegram_bot_token_here" 
+                or channel_id == "your_telegram_channel_or_chat_id_here"
+            )
             
             if evaluation.get("is_match"):
                 print(f"  [MATCH FOUND] Title: {opp['title']} | Reason: {evaluation.get('reason')}")
@@ -98,11 +105,16 @@ def main():
                     summary=evaluation.get("summary", "No summary provided."),
                     link=opp["link"]
                 )
-                if alert_sent:
-                    # Sleep to avoid hitting Telegram spam limits
-                    time.sleep(2.5)
+                if alert_sent or is_local_only:
+                    processed_ids.add(opp["id"])
+                    if alert_sent:
+                        # Sleep to avoid hitting Telegram spam limits
+                        time.sleep(2.5)
+                else:
+                    print(f"  [FAILED] Telegram alert failed to send due to network issue. Will retry on next run.")
             else:
                 print(f"  [NO MATCH] Title: {opp['title']} | Reason: {evaluation.get('reason')}")
+                processed_ids.add(opp["id"])
             
     # 5. Save updated state
     save_processed_ids(processed_ids)
