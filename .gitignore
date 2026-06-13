@@ -1,0 +1,16 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# Local HTML scrape / diagnostic dumps
+*.html
+
+# Scratch/diagnostic/test scripts
+inspect_*.py
+test_*.py
+simulate_*.py
+parse_*.py
