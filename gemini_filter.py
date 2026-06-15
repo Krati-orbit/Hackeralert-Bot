@@ -14,16 +14,21 @@ if api_key:
 
 SYSTEM_PROMPT = """
 You are HackAlert AI, an intelligent opportunity-matching assistant. 
-Your job is to analyze scraped listings of hackathons, coding contests, and internships, and determine if they match the target Student Profile.
+Your job is to analyze scraped listings of hackathons, coding contests, technical events, competitions, and internships (both paid and unpaid), and determine if they match the target Student Profile.
 
 Target Student Profile:
 {student_profile}
 
 For the given opportunity context, you must output a raw JSON object containing the following keys:
-- is_match (boolean): True if this opportunity fits the student profile, False if it is irrelevant or mismatched. Only match software development, computer science, AI/ML, tech hackathons, UI/UX, or technical coding/programming roles. Filter out sales, banking, accounting, mechanical, content writing, marketing, or general business roles.
+- is_match (boolean): True if this opportunity fits the student profile, False if it is irrelevant or mismatched.
+  * You MUST match technical opportunities including: software engineering, web/app development, AI/ML, data science, cybersecurity, tech hackathons, coding contests, hackathons, technical events, competitions, and tech internships (accept both paid and unpaid internships).
+  * You MUST filter out sales, banking, HR, finance, content writing, marketing, or general non-technical roles.
 - confidence_score (number): A score from 0 to 100 representing your confidence.
 - reason (string): A short, single-sentence explanation of why it matches or doesn't match.
-- summary (string): A brief, engaging, 2-sentence summary of what this opportunity is about.
+- summary (string): A detailed, 3-4 sentence comprehensive description of the opportunity. Explain what the candidate will do or what the event/competition tasks are.
+- key_requirements (string): A clear, bullet-pointed list of required skills, prerequisites, or eligibility criteria (e.g. "• Python, React\n• Open to pre-final years"). If none, output "N/A".
+- benefits (string): Stipend details (explicitly state "Unpaid" if it is unpaid, or the specific payment/stipend range), prizes, certificates, or perks. If none, output "N/A".
+- event_mode (string): The mode of the opportunity, which must be "Online" (for remote/virtual/hybrid) or "Offline (Location)" (if in-person; specify location if known, e.g. "Offline (Mumbai)"). Default to "Online" or "N/A" if unknown.
 - title (string): A cleaned-up, human-readable title of the opportunity.
 - company (string): Cleaned name of the company or hosting organization.
 - deadline (string): The extracted registration deadline date or "N/A" if not found.
@@ -34,17 +39,22 @@ Do not include any markdown backticks, explanations, or leading/trailing text. O
 
 SYSTEM_PROMPT_BATCH = """
 You are HackAlert AI, an intelligent opportunity-matching assistant. 
-Your job is to analyze a batch of scraped listings of hackathons, coding contests, and internships, and determine if each matches the target Student Profile.
+Your job is to analyze a batch of scraped listings of hackathons, coding contests, technical events, competitions, and internships (both paid and unpaid), and determine if each matches the target Student Profile.
 
 Target Student Profile:
 {student_profile}
 
 For the given JSON list of opportunities, you must output a raw JSON array of objects. Each object in the array corresponds to one opportunity in the input, preserving its "id", and must contain the following keys:
 - id (string): The exact ID of the opportunity from the input.
-- is_match (boolean): True if this opportunity fits the student profile, False if it is irrelevant or mismatched. Only match software development, computer science, AI/ML, tech hackathons, UI/UX, or technical coding/programming roles. Filter out sales, banking, accounting, mechanical, content writing, marketing, or general business roles.
+- is_match (boolean): True if this opportunity fits the student profile, False if it is irrelevant or mismatched.
+  * You MUST match technical opportunities including: software engineering, web/app development, AI/ML, data science, cybersecurity, tech hackathons, coding contests, hackathons, technical events, competitions, and tech internships (accept both paid and unpaid internships).
+  * You MUST filter out sales, banking, HR, finance, content writing, marketing, or general non-technical roles.
 - confidence_score (number): A score from 0 to 100 representing your confidence.
 - reason (string): A short, single-sentence explanation of why it matches or doesn't match.
-- summary (string): A brief, engaging, 2-sentence summary of what this opportunity is about.
+- summary (string): A detailed, 3-4 sentence comprehensive description of the opportunity. Explain what the candidate will do or what the event/competition tasks are.
+- key_requirements (string): A clear, bullet-pointed list of required skills, prerequisites, or eligibility criteria (e.g. "• Python, React\n• Open to pre-final years"). If none, output "N/A".
+- benefits (string): Stipend details (explicitly state "Unpaid" if it is unpaid, or the specific payment/stipend range), prizes, certificates, or perks. If none, output "N/A".
+- event_mode (string): The mode of the opportunity, which must be "Online" (for remote/virtual/hybrid) or "Offline (Location)" (if in-person; specify location if known, e.g. "Offline (Mumbai)"). Default to "Online" or "N/A" if unknown.
 - title (string): A cleaned-up, human-readable title of the opportunity.
 - company (string): Cleaned name of the company or hosting organization.
 - deadline (string): The extracted registration deadline date or "N/A" if not found.
@@ -74,6 +84,9 @@ def evaluate_opportunities_batch(opportunities):
             "confidence_score": 0,
             "reason": "Gemini API Key is not configured.",
             "summary": "N/A",
+            "key_requirements": "N/A",
+            "benefits": "N/A",
+            "event_mode": "Online",
             "title": opp["title"],
             "company": "N/A",
             "deadline": "N/A",
@@ -131,7 +144,7 @@ def evaluate_opportunities_batch(opportunities):
                 if res:
                     res["success"] = True
                     # Set defaults for missing fields to avoid KeyError
-                    for field in ["is_match", "confidence_score", "reason", "summary", "title", "company", "deadline", "eligibility"]:
+                    for field in ["is_match", "confidence_score", "reason", "summary", "key_requirements", "benefits", "event_mode", "title", "company", "deadline", "eligibility"]:
                         if field not in res:
                             if field == "is_match":
                                 res[field] = False
@@ -150,6 +163,9 @@ def evaluate_opportunities_batch(opportunities):
                         "confidence_score": 0,
                         "reason": "Item missing from Gemini batch response.",
                         "summary": "N/A",
+                        "key_requirements": "N/A",
+                        "benefits": "N/A",
+                        "event_mode": "Online",
                         "title": opp["title"],
                         "company": "N/A",
                         "deadline": "N/A",
@@ -177,6 +193,9 @@ def evaluate_opportunities_batch(opportunities):
         "confidence_score": 0,
         "reason": f"Failed batch evaluation.",
         "summary": "N/A",
+        "key_requirements": "N/A",
+        "benefits": "N/A",
+        "event_mode": "Online",
         "title": opp["title"],
         "company": "N/A",
         "deadline": "N/A",
@@ -201,6 +220,9 @@ def evaluate_opportunity(platform, title, raw_context):
             "confidence_score": 0,
             "reason": "Gemini API Key is not configured.",
             "summary": "N/A",
+            "key_requirements": "N/A",
+            "benefits": "N/A",
+            "event_mode": "Online",
             "title": title,
             "company": "N/A",
             "deadline": "N/A",
@@ -258,6 +280,9 @@ def evaluate_opportunity(platform, title, raw_context):
         "confidence_score": 0,
         "reason": "Failed to evaluate due to persistent API rate limits.",
         "summary": "N/A",
+        "key_requirements": "N/A",
+        "benefits": "N/A",
+        "event_mode": "Online",
         "title": title,
         "company": "N/A",
         "deadline": "N/A",

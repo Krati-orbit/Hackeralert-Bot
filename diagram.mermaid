@@ -1,0 +1,72 @@
+graph TD
+    %% Define styles/classes
+    classDef main fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
+    classDef scraper fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085;
+    classDef filter fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
+    classDef output fill:#f8d7da,stroke:#721c24,stroke-width:2px,color:#721c24;
+    classDef database fill:#e2e3e5,stroke:#383d41,stroke-width:2px,color:#383d41;
+
+    %% Orchestrator Start
+    Main[main.py Orchestrator]:::main
+    Env[.env Configuration]:::database
+    DB[(notified_opportunities.json)]:::database
+
+    Main -->|1. Load Config & Settings| Env
+    Main -->|1. Load Processed IDs| DB
+    
+    %% Scraping phase
+    subgraph ScraperModule [Scraper Module - scraper.py]
+        direction TB
+        Scraper[scrape_all concurrently]:::scraper
+        Devfolio[Devfolio API Scraper]:::scraper
+        Unstop[Unstop API Scraper]:::scraper
+        Internshala[Internshala BS4 HTML Scraper]:::scraper
+        HackerEarth[HackerEarth Playwright + BS4 Scraper]:::scraper
+        
+        Scraper --> Devfolio
+        Scraper --> Unstop
+        Scraper --> Internshala
+        Scraper --> HackerEarth
+    end
+    
+    Main -->|2. Run Scrapers| Scraper
+    Scraper -->|Return all opportunity listings| Main
+    
+    %% Filtering phase
+    Main -->|3. Filter out already processed IDs| ProcessCheck{Are there new IDs?}:::main
+    ProcessCheck -->|No| End[Exit Bot]:::main
+    
+    ProcessCheck -->|Yes| BatchEval[Evaluate in batches of 10]:::main
+    
+    subgraph GeminiFilterModule [AI Filter Module - gemini_filter.py]
+        direction TB
+        BatchFunc[evaluate_opportunities_batch]:::filter
+        SingleFunc[evaluate_opportunity fallback]:::filter
+        Gemini[Gemini 2.5 Flash Model]:::filter
+        
+        BatchFunc -->|Format prompt with Batch JSON| Gemini
+        SingleFunc -->|Format prompt for single item| Gemini
+    end
+    
+    BatchEval -->|4. Request AI Analysis| BatchFunc
+    BatchFunc -->|If Batch fails/throttled| SingleFunc
+    
+    Gemini -->|Returns structured JSON| BatchFunc
+    
+    %% Decision phase
+    BatchFunc -->|Return matches & descriptions| Main
+    
+    Main -->|5. Loop through evaluations| MatchCheck{Is it a Match?}:::main
+    
+    MatchCheck -->|No| MarkProcessed[Mark ID as Processed]:::main
+    
+    subgraph AlertModule [Alert Module - telegram_sender.py]
+        SendAlert[send_telegram_alert]:::output
+        Telegram[Telegram Channel Alert]:::output
+    end
+    
+    MatchCheck -->|Yes| SendAlert
+    SendAlert -->|Format HTML Message| Telegram
+    Telegram -->|Success| MarkProcessed
+    
+    MarkProcessed -->|6. Save to DB| DB

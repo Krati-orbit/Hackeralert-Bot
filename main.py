@@ -103,6 +103,9 @@ def main():
                     deadline=evaluation.get("deadline", "N/A"),
                     eligibility=evaluation.get("eligibility", "Open to all"),
                     summary=evaluation.get("summary", "No summary provided."),
+                    key_requirements=evaluation.get("key_requirements", "N/A"),
+                    benefits=evaluation.get("benefits", "N/A"),
+                    event_mode=evaluation.get("event_mode", "Online"),
                     link=opp["link"]
                 )
                 if alert_sent or is_local_only:

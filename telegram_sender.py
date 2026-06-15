@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
 
-def send_telegram_alert(platform, title, company, deadline, eligibility, summary, link):
+def send_telegram_alert(platform, title, company, deadline, eligibility, summary, key_requirements, benefits, event_mode, link):
     """
     Sends a beautifully formatted HTML alert to the configured Telegram channel.
     """
@@ -15,7 +15,12 @@ def send_telegram_alert(platform, title, company, deadline, eligibility, summary
     
     if not token or not channel_id or token == "your_telegram_bot_token_here" or channel_id == "your_telegram_channel_or_chat_id_here":
         print(f"[Telegram Alert] Warning: Credentials not set. Logging message local-only:")
-        print(f"  [{platform}] {title} by {company} - Link: {link}")
+        print(f"  [{platform}] {title} by {company}")
+        print(f"  Mode: {event_mode}")
+        print(f"  Stipend/Benefits: {benefits}")
+        print(f"  Requirements:\n{key_requirements}")
+        print(f"  Summary:\n{summary}")
+        print(f"  Link: {link}")
         return False
 
     # Escape dynamic fields to prevent HTML parsing errors on Telegram
@@ -25,6 +30,9 @@ def send_telegram_alert(platform, title, company, deadline, eligibility, summary
     safe_deadline = html.escape(str(deadline))
     safe_eligibility = html.escape(str(eligibility))
     safe_summary = html.escape(str(summary))
+    safe_key_requirements = html.escape(str(key_requirements))
+    safe_benefits = html.escape(str(benefits))
+    safe_event_mode = html.escape(str(event_mode))
     safe_link = html.escape(str(link))
 
     # Construct the message payload in HTML
@@ -33,9 +41,12 @@ def send_telegram_alert(platform, title, company, deadline, eligibility, summary
         f"🚀 <b>Title:</b> {safe_title}\n"
         f"🏢 <b>Company:</b> {safe_company}\n"
         f"🌐 <b>Platform:</b> {safe_platform}\n"
+        f"📍 <b>Mode:</b> {safe_event_mode}\n"
         f"⏳ <b>Deadline:</b> {safe_deadline}\n"
-        f"🎓 <b>Eligibility:</b> {safe_eligibility}\n\n"
-        f"📝 <b>Summary:</b>\n<i>{safe_summary}</i>\n\n"
+        f"🎓 <b>Eligibility:</b> {safe_eligibility}\n"
+        f"💰 <b>Stipend / Benefits:</b> {safe_benefits}\n\n"
+        f"📋 <b>Key Requirements:</b>\n{safe_key_requirements}\n\n"
+        f"📝 <b>Summary / Details:</b>\n<i>{safe_summary}</i>\n\n"
         f"🔗 <a href='{safe_link}'>Click here to Apply</a>\n"
         f"───────────────────"
     )
@@ -71,5 +82,9 @@ if __name__ == "__main__":
         deadline="June 30, 2026",
         eligibility="Open to all pre-final year students",
         summary="Work on highly scalable search index pipelines using Go/Python. Collaborate with core engineering teams.",
+        key_requirements="• Python, Go, or C++ experience\n• Good algorithmic understanding\n• Strong system design skills",
+        benefits="Rs. 80,000/month + Free Meals & Snacks",
+        event_mode="Offline (Bangalore Office)",
         link="https://google.com/careers"
     )
+
