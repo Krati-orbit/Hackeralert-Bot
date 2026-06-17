@@ -32,9 +32,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright Chromium and dependencies
         run: |
-          python -m playwright install chromium
+          python -m playwright install --with-deps chromium
 
       - name: Run HackAlert Bot
         env:
