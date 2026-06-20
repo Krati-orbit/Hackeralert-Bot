@@ -68,7 +68,7 @@ python main.py
 ```
 
 ### Automation (Cron / Task Scheduler)
-To run the bot continuously (e.g., every 3 hours), you can schedule it using your operating system's scheduler:
+To run the bot continuously (e.g., every 3 hours),you can schedule it using your operating system's scheduler:
 - **Linux/macOS (Cron):**
   ```bash
   0 */3 * * * cd /path/to/project && /path/to/venv/bin/python main.py >> bot.log 2>&1
