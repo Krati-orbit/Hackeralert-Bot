@@ -90,3 +90,4 @@ To run the bot continuously (e.g., every 3 hours),you can schedule it using your
 ├── .env                        # Local configurations (ignored by git)
 └── requirements.txt            # Python dependencies list
 ```
+Note : It updates automatically after every 6 hours so if there any new opportunity for you then it informed .
