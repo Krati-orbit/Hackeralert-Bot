@@ -2,6 +2,8 @@
 
 An AI-powered automated opportunity aggregator that monitors online developer platforms, filters listings against a custom student profile using Gemini AI, and broadcasts matches to a Telegram channel in real-time.
 
+Want to join my telegram channel here's the link : https://t.me/hackeralertbott
+
 ---
 
 ## 🌟 Key Features
